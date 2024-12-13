@@ -1,0 +1,18 @@
+# Node modules
+node_modules/
+
+# Archivos de entorno
+.env
+.env.* 
+
+# Directorios de compilación
+dist/
+build/
+
+# Archivos de dependencias específicas de sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de editor
+.vscode/
+.idea/
