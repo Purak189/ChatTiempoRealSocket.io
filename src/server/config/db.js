@@ -1,5 +1,5 @@
 import { createClient } from '@libsql/client';
-import { DB_URL, DB_TOKEN_TURSO} from './config.js';
+import { DB_URL, DB_TOKEN_TURSO} from '../config.js';
 
 let dbInstance = null;
 

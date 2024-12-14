@@ -8,7 +8,9 @@ import { createServer } from 'node:http';
 import { PORT } from './config.js';
 
 // Archivo de inicializacion de la base de datos
-import { db } from  './config/dbInit.js';
+import handleSocketConnection from './controllers/socketController.js';
+
+import { db } from './config/dbInit.js';
 
 dotenv.config();
 
@@ -22,55 +24,35 @@ const io = new Server(server, {
     }
 });
 
+// Endpoint para validar usuario
+app.get('/validateUser', async (req, res) => {
+    const { username } = req.query;
 
-io.on('connection', async (socket) => {
-    console.log('User connected');
+    try {
+        const userResult = await db.execute('SELECT * FROM users WHERE username = ?', [username]);
 
-    socket.on('disconnect', () => {
-        console.log('User disconnected');
-    })
-
-    console.log('Auth:')
-    console.log(socket.handshake.auth)
-
-    socket.on('chat message', async (msg) => {
-        let result
-        let username = socket.handshake.auth.username ?? 'Anonymous'
-        try {
-            result = await db.execute({
-                sql: 'INSERT INTO messages (content, user) VALUES (:msg, :username)',
-                args: { msg, username }
-            })
-        } catch (error) {
-            console.error(error)
-            return
+        if (userResult.rows.length > 0) {
+            return res.json({ exists: true });
+        } else {
+            return res.json({ exists: false });
         }
-        io.emit('chat message', msg, result.lastInsertRowid.toString(), username);
-    })
-
-
-    if (!socket.recovered) {
-        try {
-            const results = await db.execute({
-                sql: 'SELECT id, content, user FROM messages WHERE id > ?',
-                args: [socket.handshake.auth.serverOffset ?? 0]
-            })
-
-            results.rows.forEach(row => {
-                socket.emit('chat message', row.content, row.id.toString(), row.user);
-            })
-        } catch (error) {
-            console.error(error)
-            return
-        }
+    } catch (err) {
+        console.error('Error checking user:', err);
+        return res.status(500).json({ exists: false });
     }
+});
+
+io.on('connection', async(socket) => {
+    console.log('User connected', socket.id);
+
+    await handleSocketConnection(socket, io);
 })
 
 app.use(logger('dev'));
 
 
 app.get('/', (req, res) => {
-    res.sendFile(process.cwd() + '/client/index.html');
+    res.sendFile(process.cwd() + '/src/client/index.html');
 });
 
 server.listen(port, () => {

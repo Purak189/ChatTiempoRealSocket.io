@@ -1,4 +1,4 @@
-import { getDbInstance } from './config/db.js';
+import { getDbInstance } from './db.js';
 
 const db = getDbInstance();
 
